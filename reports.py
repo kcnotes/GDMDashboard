@@ -16,15 +16,16 @@ class GDMBot(object):
         self.ua = 'GDMDashboard/1.0, Discussions Reports Bot'
         self.startDate = None
         self.wikis = {}
+        self.lastWiki = 0
 
         self.datauser = 'Noreports'
         self.datapass = password
         self.datasession = None
 
     def login(self):
-		"""
-		Log in to Wikia via services, requires discussions rights
-		"""
+        """
+        Log in to Wikia via services, requires discussions rights
+        """
         login_session = requests.Session()
         result = login_session.post('https://services.wikia.com/auth/token', data={
             'username': self.username,
@@ -38,7 +39,6 @@ class GDMBot(object):
                 'Could not log in, username or password incorrect. Please check config.py')
             exit()
 
-        self.loggedin = True
         cj = requests.utils.cookiejar_from_dict(
             dict(p.split('=') for p in cookie.split('; ')))
 
@@ -48,10 +48,10 @@ class GDMBot(object):
         self.session.headers.update({'User-Agent': self.ua})
 
     def datalogin(self):
-		"""
-		Log in to Wikia via services for discussions.fandom.com edits
-		"""
-		login_session = requests.Session()
+        """
+        Log in to Wikia via services for discussions.fandom.com edits
+        """
+        login_session = requests.Session()
         result = login_session.post('https://services.wikia.com/auth/token', data={
             'username': self.datauser,
             'password': self.datapass
@@ -64,7 +64,6 @@ class GDMBot(object):
                 'Could not log in, username or password incorrect. Please check config.py')
             exit()
 
-        self.loggedin = True
         cj = requests.utils.cookiejar_from_dict(
             dict(p.split('=') for p in cookie.split('; ')))
 
@@ -72,7 +71,11 @@ class GDMBot(object):
         self.datasession = requests.Session()
         self.datasession.cookies = cj
         self.datasession.headers.update({'User-Agent': self.ua})
-        # to do
+        # TODO: Complete this function
+    
+    def checkLoggedIn(self):
+        userinfo = self.session.get('https://services.wikia.com/whoami')
+        return 'userId' in userinfo.json()
 
     def _getReportedPosts(self, id):
         req = self.session.get('https://services.wikia.com/discussion/' + str(id) + '/posts', params={
@@ -107,11 +110,21 @@ class GDMBot(object):
             'offset': offset
         })
         return wams.json()
-	
+    
+    def _getWikiDomains(self, fromWiki, amount):
+        wikis = self.session.get('https://www.wikia.com/api.php', params={
+            'action': 'query',
+            'list': 'wkdomains',
+            'wkfrom': fromWiki,
+            'wkto': fromWiki + amount,
+            'format': 'json'
+        })
+        return wikis.json()
+    
     def recordReports(self):
-		"""
-		Record report count into CSV file
-		"""
+        """
+        Record report count into CSV file
+        """
         for id, wiki in self.wikis.items():
             id = id.rstrip()
             reports = self._getReportedPosts(id)
@@ -147,7 +160,7 @@ class GDMBot(object):
                 wiki['nonModCount'] = totalCount - wiki['modCount']
 
     def getTopWikis(self, i):
-        wikis = bot._getTopWAM(i)
+        wikis = self._getTopWAM(i)
         for id in wikis['wam_index']:
             self.wikis[id] = {
                 'wiki': wikis['wam_index'][id]['url'],
@@ -156,9 +169,22 @@ class GDMBot(object):
                 'totalReports': 0,
                 'exists': True
             }
+    
+    def getAllWikis(self, fromWiki, amount):
+        wikis = self._getWikiDomains(fromWiki, amount)
+        for id, wiki in wikis['query']['wkdomains'].items():
+            self.wikis[id] = {
+                'wiki': wiki['domain'],
+                'modCount': 0,
+                'nonModCount': 0,
+                'totalReports': 0,
+                'exists': True
+            }
 
     def recordToWiki(self):
-        """For recording data, use another account (if required)"""
+        """
+        For recording data, use another account (if required)
+        """
         with open("data/reports.csv", "a") as dataFile:
             for id, wiki in self.wikis.items():
                 if not wiki['exists']:
@@ -167,18 +193,21 @@ class GDMBot(object):
                                + str(wiki['modCount']) + ',' +
                                str(wiki['nonModCount']) + ','
                                + str(wiki['totalReports']) + '\n')
-        del bot.wikis
-        bot.wikis = {}
+        del self.wikis
+        self.wikis = {}
 
 
 if __name__ == '__main__':
     bot = GDMBot()
     bot.login()
-    i = 0
-    while i < 5000:
-        bot.getTopWikis(i)
+    i = 1
+    while i < 1932083:
+        if not bot.checkLoggedIn():
+            bot.login()
+        # bot.getTopWikis(i)
+        bot.getAllWikis(i, 50)
         bot.recordReports()
         bot.recordModActions()
         bot.recordToWiki()
         print('Done recording, offset ' + str(i))
-        i = i + 20
+        i = i + 50
