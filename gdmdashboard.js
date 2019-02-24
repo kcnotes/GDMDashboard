@@ -41,6 +41,25 @@
     /* View */
     GDMD.templates = {};
 
+    // TODO: Change array in array to object
+    GDMD.templates.dashboardTable = 
+        '<table class="article-table sortable">' +
+            '<thead>' +
+                '<th>Wiki ID</th>' +
+                '<th>Wiki URL</th>' +
+                '<th>Mod actions</th>' +
+                '<th>Staff/GDM actions</th>' +
+                '<th>Reports</th>' +
+            '</thead>' +
+            '<tbody>' +
+                '{{#wikis}}' +
+                    '<tr>' +
+                        '{{#.}}<td>{{.}}</td>{{/.}}' +
+                    '</tr>' +
+                '{{/wikis}}' +
+            '</tbody>' +
+        '</table>';
+
     /**
      * Get a page's wikitext
      * @param {String} page the page to get wikitext from
@@ -84,7 +103,10 @@
                 wikis[i] = wiki.split(',');
                 wikis[i][0] = wikis[i][0].replace('*', '');
             });
-            console.log(wikis);
+            var table = $(Mustache.render(GDMD.templates.dashboardTable, {
+                wikis: wikis
+            }));
+            $('#gdm-dashboard').append(table);
         });
     };
 
