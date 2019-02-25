@@ -2,6 +2,7 @@ import requests
 import json
 import re
 import os
+from qa import ignorewikis
 from secrets import password
 
 
@@ -199,6 +200,8 @@ class GDMBot(object):
                 if not line: continue
                 wikiurl = re.search(r"https?:\/\/(.*?)\/d\/p\/", line)
                 if wikiurl.group(1) and wikiurl.group(1) not in urls:
+                    if wikiurl.group(1) in ignorewikis:
+                        continue
                     urls.append(wikiurl.group(1))
             return urls
         return None
