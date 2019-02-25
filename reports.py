@@ -1,5 +1,7 @@
 import requests
 import json
+import re
+import os
 from secrets import password
 
 
@@ -20,6 +22,7 @@ class GDMBot(object):
 
         self.datauser = 'Noreports'
         self.datapass = password
+        self.datarootpage = 'Data:Overview/'
         self.datasession = None
 
     def login(self):
@@ -195,9 +198,33 @@ class GDMBot(object):
                                + str(wiki['totalReports']) + '\n')
         del self.wikis
         self.wikis = {}
+    
+    def get_wikis_reports_log(self):
+        """
+        Gets from discussionsreports.log and adds to the queue
+        """
+        with open("discussionsreports.log", "r") as dataFile:
+            urls = []
+            for line in dataFile:
+                line = line.rstrip()
+                if not line: continue
+                wikiurl = re.search(r"https?:\/\/(.*?)\/d\/p\/", line)
+                if wikiurl.group(1) and wikiurl.group(1) not in urls:
+                    urls.append(wikiurl.group(1))
+            return urls
+        return None
+    
+    def delete_new_reports_log(self):
+        if os.path.isfile('discussionsreports.log'):
+            os.remove('discussionsreports.log')
+        else:
+            print('Error: discussionsreports.log was not found and was not deleted.')
 
 
-if __name__ == '__main__':
+def getAllWikiReports():
+    """
+    Gets all wikis with reports
+    """
     bot = GDMBot()
     bot.login()
     i = 1
@@ -211,3 +238,17 @@ if __name__ == '__main__':
         bot.recordToWiki()
         print('Done recording, offset ' + str(i))
         i = i + 50
+
+
+# Loop through new reports
+# If report not in url.csv:
+#     add to the list (site name, ID, topic)
+# get wiki info of all URLs (discussions, admins, wam, activeUsers)
+# get modCount, nonModCount and totalReports
+# write straight to wiki
+
+# If new month, delete wikis with 0 reports?
+
+if __name__ == '__main__':
+    bot = GDMBot()
+    bot.get_wikis_from_log()
