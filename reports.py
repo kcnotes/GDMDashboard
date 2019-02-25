@@ -15,10 +15,12 @@ class GDMBot(object):
         self.session = None
         self.username = 'Noreports'
         self.pw = password
-        self.ua = 'GDMDashboard/1.0, Discussions Reports Bot'
+        self.ua = 'GDMDashboardBot/1.0, Discussions Reports Bot'
         self.startDate = None
         self.wikis = {}
         self.lastWiki = 0
+
+        self.datajson = 'data/wikiinfo.json'
 
         self.datauser = 'Noreports'
         self.datapass = password
@@ -74,10 +76,13 @@ class GDMBot(object):
         self.datasession = requests.Session()
         self.datasession.cookies = cj
         self.datasession.headers.update({'User-Agent': self.ua})
-        # TODO: Complete this function
     
     def checkLoggedIn(self):
         userinfo = self.session.get('https://services.wikia.com/whoami')
+        return 'userId' in userinfo.json()
+
+    def checkDataLoggedIn(self):
+        userinfo = self.datasession.get('https://services.wikia.com/whoami')
         return 'userId' in userinfo.json()
 
     def _getReportedPosts(self, id):
@@ -95,24 +100,6 @@ class GDMBot(object):
         })
         data = req.json()
         return data
-
-    def _getTopWAM(self, offset):
-        if not self.startDate:
-            dates = self.session.get(
-                'http://www.wikia.com/api/v1/WAM/MinMaxWamIndexDate')
-            self.startDate = dates.json()['min_max_dates']['max_date']
-
-        wams = self.session.get('https://www.wikia.com/api/v1/WAM/WAMIndex', params={
-            'vertical_id': 0,
-            'sort_column': 'wam',
-            'sort_direction': 'DESC',
-            'limit': 20,
-            'fetch_admins': 'false',
-            'fetch_wiki_images': 'false',
-            'wam_day': self.startDate,
-            'offset': offset
-        })
-        return wams.json()
     
     def _getWikiDomains(self, fromWiki, amount):
         wikis = self.session.get('https://www.wikia.com/api.php', params={
@@ -123,6 +110,18 @@ class GDMBot(object):
             'format': 'json'
         })
         return wikis.json()
+
+    def _getBasicWikiData(self, url):
+        req = self.session.get('https://www.wikia.com/api/v1/Wikis/ByString', params={
+            'string': url,
+            'includeDomain': 'true'
+        })
+        data = req.json()
+        if data['items']:
+            for wiki in data['items']:
+                if wiki['domain'].lower() == url.lower():
+                    return wiki
+        return None
     
     def recordReports(self):
         """
@@ -161,17 +160,6 @@ class GDMBot(object):
                 wiki['modCount'] = modCount['badge:threadmoderator'] + \
                     modCount['badge:sysop']
                 wiki['nonModCount'] = totalCount - wiki['modCount']
-
-    def getTopWikis(self, i):
-        wikis = self._getTopWAM(i)
-        for id in wikis['wam_index']:
-            self.wikis[id] = {
-                'wiki': wikis['wam_index'][id]['url'],
-                'modCount': 0,
-                'nonModCount': 0,
-                'totalReports': 0,
-                'exists': True
-            }
     
     def getAllWikis(self, fromWiki, amount):
         wikis = self._getWikiDomains(fromWiki, amount)
@@ -184,7 +172,7 @@ class GDMBot(object):
                 'exists': True
             }
 
-    def recordToWiki(self):
+    def recordReportsToCSV(self):
         """
         For recording data, use another account (if required)
         """
@@ -199,9 +187,10 @@ class GDMBot(object):
         del self.wikis
         self.wikis = {}
     
-    def get_wikis_reports_log(self):
+    def getWikisReportsLog(self):
         """
-        Gets from discussionsreports.log and adds to the queue
+        Gets from discussionsreports.log
+        Returns a unique set of wikis
         """
         with open("discussionsreports.log", "r") as dataFile:
             urls = []
@@ -214,12 +203,30 @@ class GDMBot(object):
             return urls
         return None
     
-    def delete_new_reports_log(self):
+    def deleteWikisReportsLog(self):
+        """
+        Deletes discussionsreports.log
+        """
         if os.path.isfile('discussionsreports.log'):
             os.remove('discussionsreports.log')
         else:
             print('Error: discussionsreports.log was not found and was not deleted.')
 
+    def storeNewWikiData(self, urls):
+        """
+        Store a 'cache' of basic data for new wikis
+        TODO: clear this data later
+        """
+        data = ''
+        with open(self.datajson, 'r') as jsonFile:
+            data = json.load(jsonFile)
+            for url in urls:
+                if url not in data['items']:
+                    if not self.checkLoggedIn():
+                        self.login()
+                    wiki = self._getBasicWikiData(url)
+                    if wiki:
+                        data['items'][url] = wiki
 
 def getAllWikiReports():
     """
@@ -231,11 +238,10 @@ def getAllWikiReports():
     while i < 1932083:
         if not bot.checkLoggedIn():
             bot.login()
-        # bot.getTopWikis(i)
-        bot.getAllWikis(i, 50)
+        bot.getAllWikis(i, 500)
         bot.recordReports()
         bot.recordModActions()
-        bot.recordToWiki()
+        bot.recordReportsToCSV()
         print('Done recording, offset ' + str(i))
         i = i + 50
 
@@ -251,4 +257,7 @@ def getAllWikiReports():
 
 if __name__ == '__main__':
     bot = GDMBot()
-    bot.get_wikis_from_log()
+    bot.login()
+    urls = bot.getWikisReportsLog()
+    if urls:
+        bot.storeNewWikiData(urls)
