@@ -2,6 +2,7 @@ import requests
 import json
 import re
 import os
+from datetime import datetime
 from qa import ignorewikis
 from secrets import password
 
@@ -25,8 +26,9 @@ class GDMBot(object):
 
         self.datauser = 'Noreports'
         self.datapass = password
-        self.datawiki = 'https://noreply.fandom.com/'
+        self.datawiki = 'https://discussions.fandom.com'
         self.datarootpage = 'Data:Overview/'
+        self.datasummary = 'Automatic: Updating GDMDashboard data'
         self.datasession = None
 
     def login(self):
@@ -186,12 +188,55 @@ class GDMBot(object):
                     continue
                 if not wiki['exists']:
                     continue
-                dataFile.write(str(wiki['id']) + '|' + wiki['domain'] + '|'
+                dataFile.write('*' + str(wiki['id']) + '|' + str(wiki['domain']) + '|'
                                + str(wiki['name']) + '|' + str(wiki['hub']) + '|' 
                                + str(wiki['language']) + '|' 
                                + str(wiki['modCount']) + '|'
                                + str(wiki['nonModCount']) + '|'
                                + str(wiki['totalReports']) + '\n')
+        del self.wikis
+        self.wikis = {}
+
+    def recordReportsToWiki(self):
+        """
+        For recording data, use another account (if required)
+        """
+        text = ""
+        for url, wiki in self.wikis.items():
+            if url in ignorewikis:
+                continue
+            if not wiki['exists']:
+                continue
+            text += ('*' + str(wiki['id']) + '|' + str(wiki['domain']) + '|'
+                        + str(wiki['name']) + '|' + str(wiki['hub']) + '|' 
+                        + str(wiki['language']) + '|' 
+                        + str(wiki['modCount']) + '|'
+                        + str(wiki['nonModCount']) + '|'
+                        + str(wiki['totalReports']) + '\n')
+        
+        text += '[[Category:Dashboard overview data]]'
+        if not self.datasession or self.checkDataLoggedIn():
+            self.datalogin()
+        tokendata = self.datasession.get(self.datawiki + '/api.php', params={
+            'action': 'query',
+            'prop': 'info',
+            'titles': 'Main Page',
+            'intoken': 'edit',
+            'format': 'json'
+        }).json()
+        token = ''
+        for key in tokendata['query']['pages']:
+            token = tokendata['query']['pages'][key]['edittoken']
+        
+        today = datetime.utcnow().date()
+        self.datasession.post(self.datawiki + '/api.php', data={
+            'action': 'edit',
+            'title': self.datarootpage + today.strftime("%Y") + ' ' + today.strftime("%B"),
+            'summary': self.datasummary,
+            'text': text,
+            'token': token
+        })
+        
         del self.wikis
         self.wikis = {}
     
@@ -200,18 +245,21 @@ class GDMBot(object):
         Gets from discussionsreports.log
         Returns a unique set of wikis
         """
-        with open("discussionsreports.log", "r") as dataFile:
-            urls = []
-            for line in dataFile:
-                line = line.rstrip()
-                if not line: continue
-                wikiurl = re.search(r"https?:\/\/(.*?)\/d\/p\/", line)
-                if wikiurl.group(1) and wikiurl.group(1) not in urls:
-                    if wikiurl.group(1) in ignorewikis:
-                        continue
-                    urls.append(wikiurl.group(1))
-            return urls
-        return None
+        try:
+            with open("discussionsreports.log", "r") as dataFile:
+                urls = []
+                for line in dataFile:
+                    line = line.rstrip()
+                    if not line: continue
+                    wikiurl = re.search(r"https?:\/\/(.*?)\/d\/p\/", line)
+                    if wikiurl.group(1) and wikiurl.group(1) not in urls:
+                        if wikiurl.group(1) in ignorewikis:
+                            continue
+                        urls.append(wikiurl.group(1))
+                return urls
+            return None
+        except FileNotFoundError as e:
+            return None
     
     def deleteWikisReportsLog(self):
         """
@@ -227,6 +275,8 @@ class GDMBot(object):
         Store a 'cache' of basic data for new wikis
         TODO: clear this data later
         """
+        if not urls:
+            urls = []
         data = None
         with open(self.datajson, 'r') as jsonFile:
             data = json.load(jsonFile)
@@ -276,8 +326,11 @@ if __name__ == '__main__':
     bot = GDMBot()
     bot.login()
     urls = bot.getWikisReportsLog()
+    bot.deleteWikisReportsLog()
+    print('Logs recorded and deleted')
     wikiData = bot.storeNewWikiData(urls)
     bot.wikis = wikiData['items']
     bot.recordReports()
     bot.recordModActions()
-    bot.recordReportsToCSV()
+    print('Data all collected')
+    bot.recordReportsToWiki()
