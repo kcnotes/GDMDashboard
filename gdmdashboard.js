@@ -45,16 +45,24 @@
     GDMD.templates.dashboardTable = 
         '<table class="article-table sortable">' +
             '<thead>' +
-                '<th>Wiki ID</th>' +
-                '<th>Wiki URL</th>' +
+                '<th>Wiki</th>' +
+                '<th>Language</th>' +
+                '<th>Hub</th>' +
                 '<th>Mod actions</th>' +
-                '<th>Staff/GDM actions</th>' +
-                '<th>Reports</th>' +
+                '<th>Our actions</th>' +
+                '<th>Unreviewed reports</th>' +
             '</thead>' +
             '<tbody>' +
                 '{{#wikis}}' +
                     '<tr>' +
-                        '{{#.}}<td>{{.}}</td>{{/.}}' +
+                        '{{#.}}{{#exists}}' +
+                            '<td><a href="http://{{url}}/d" target="_blank">{{wikiname}}</a></td>' + 
+                            '<td>{{lang}}</td>' + 
+                            '<td>{{hub}}</td>' + 
+                            '<td>{{modCount}}</td>' + 
+                            '<td>{{nonModCount}}</td>' + 
+                            '<td>{{totalReports}}</td>' + 
+                        '{{/exists}}{{/.}}' +
                     '</tr>' +
                 '{{/wikis}}' +
             '</tbody>' +
@@ -100,13 +108,32 @@
         $.when(GDMD.getPageContents(GDMD.PAGES.OVERVIEW + year + ' ' + GDMD.MONTHS[month])).then(function(content) {
             var wikis = content.split('\n');
             wikis.forEach(function(wiki, i) {
-                wikis[i] = wiki.split(',');
-                wikis[i][0] = wikis[i][0].replace('*', '');
+                var logComponents = wiki.split('|');
+                if (!logComponents[0].startsWith('*')) {
+                    wikis[i] = {
+                        exists: false
+                    };
+                    return;
+                }
+                wikis[i] = {
+                    wikiid: logComponents[0].replace('*\s?', ''),
+                    url: logComponents[1],
+                    wikiname: logComponents[2],
+                    hub: logComponents[3] == 'None' ? '' : logComponents[3],
+                    lang: logComponents[4],
+                    modCount: logComponents[5],
+                    nonModCount: logComponents[6],
+                    totalReports: logComponents[7],
+                    exists: true
+                };
             });
             var table = $(Mustache.render(GDMD.templates.dashboardTable, {
                 wikis: wikis
             }));
             $('#gdm-dashboard').append(table);
+            mw.loader.using('jquery.tablesorter', function () {
+                table.tablesorter();
+            });
         });
     };
 
