@@ -170,6 +170,9 @@
         var noHubFilters = true;
         $('#filter-hubs input:checkbox').each(function () {
             if ($(this).attr('checked') && $(this).parent().attr('data-cat') !== 'all') {
+                if ($(this).parent().attr('data-cat') === 'None') {
+                    hubFilters.push("");
+                }
                 hubFilters.push($(this).parent().attr('data-cat'));
                 noHubFilters = false;
             }
