@@ -25,6 +25,7 @@ class GDMBot(object):
 
         self.datauser = 'Noreports'
         self.datapass = password
+        self.datawiki = 'https://noreply.fandom.com/'
         self.datarootpage = 'Data:Overview/'
         self.datasession = None
 
@@ -128,16 +129,17 @@ class GDMBot(object):
         """
         Record report count into CSV file
         """
-        for id, wiki in self.wikis.items():
-            id = id.rstrip()
-            reports = self._getReportedPosts(id)
+        for url, wiki in self.wikis.items():
+            wikiid = wiki['id'].rstrip()
+            reports = self._getReportedPosts(wikiid)
             if reports:
+                wiki['exists'] = True
                 wiki['totalReports'] = reports['postCount']
             else:
                 wiki['exists'] = False
 
     def recordModActions(self):
-        for id, wiki in self.wikis.items():
+        for url, wiki in self.wikis.items():
             if not wiki['exists']:
                 continue
             modCount = {
@@ -149,7 +151,7 @@ class GDMBot(object):
                 'badge:helper': 0
             }
             totalCount = 0
-            actions = self._getModActions(id, 30)
+            actions = self._getModActions(wiki['id'], 30)
             if actions and 'users' in actions:
                 for user in actions['users']:
                     # Sum up counts
@@ -164,9 +166,10 @@ class GDMBot(object):
     
     def getAllWikis(self, fromWiki, amount):
         wikis = self._getWikiDomains(fromWiki, amount)
-        for id, wiki in wikis['query']['wkdomains'].items():
-            self.wikis[id] = {
+        for wikiid, wiki in wikis['query']['wkdomains'].items():
+            self.wikis[wiki['domain']] = {
                 'wiki': wiki['domain'],
+                'id': wikiid,
                 'modCount': 0,
                 'nonModCount': 0,
                 'totalReports': 0,
@@ -178,12 +181,16 @@ class GDMBot(object):
         For recording data, use another account (if required)
         """
         with open("data/reports.csv", "a") as dataFile:
-            for id, wiki in self.wikis.items():
+            for url, wiki in self.wikis.items():
+                if url in ignorewikis:
+                    continue
                 if not wiki['exists']:
                     continue
-                dataFile.write(str(id) + ',' + wiki['wiki'] + ','
-                               + str(wiki['modCount']) + ',' +
-                               str(wiki['nonModCount']) + ','
+                dataFile.write(str(wiki['id']) + '|' + wiki['domain'] + '|'
+                               + str(wiki['name']) + '|' + str(wiki['hub']) + '|' 
+                               + str(wiki['language']) + '|' 
+                               + str(wiki['modCount']) + '|'
+                               + str(wiki['nonModCount']) + '|'
                                + str(wiki['totalReports']) + '\n')
         del self.wikis
         self.wikis = {}
@@ -220,16 +227,23 @@ class GDMBot(object):
         Store a 'cache' of basic data for new wikis
         TODO: clear this data later
         """
-        data = ''
+        data = None
         with open(self.datajson, 'r') as jsonFile:
             data = json.load(jsonFile)
             for url in urls:
                 if url not in data['items']:
                     if not self.checkLoggedIn():
                         self.login()
+                    print('New url: ' + url)
                     wiki = self._getBasicWikiData(url)
                     if wiki:
                         data['items'][url] = wiki
+        
+        if data:
+            with open(self.datajson, 'w') as jsonFile:
+                jsonFile.write(json.dumps(data, indent=4, sort_keys=True))
+        
+        return data
 
 def getAllWikiReports():
     """
@@ -262,5 +276,8 @@ if __name__ == '__main__':
     bot = GDMBot()
     bot.login()
     urls = bot.getWikisReportsLog()
-    if urls:
-        bot.storeNewWikiData(urls)
+    wikiData = bot.storeNewWikiData(urls)
+    bot.wikis = wikiData['items']
+    bot.recordReports()
+    bot.recordModActions()
+    bot.recordReportsToCSV()
