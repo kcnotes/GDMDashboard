@@ -100,23 +100,24 @@
                 '<th>Wiki</th>' +
                 '<th>Language</th>' +
                 '<th>Hub</th>' +
-                '<th>Mod actions</th>' +
-                '<th>Our actions</th>' +
+                '<th>Local mod actions</th>' +
+                '<th>Global mod actions</th>' +
                 '<th>Unreviewed reports</th>' +
             '</thead>' +
             '<tbody>' +
                 '{{#wikis}}' +
                     '<tr>' +
-                        '{{#.}}{{#exists}}' +
+                        '{{#exists}}' +
                             '<td><a href="http://{{url}}/d" target="_blank">{{wikiname}}</a></td>' + 
                             '<td>{{lang}}</td>' + 
                             '<td>{{hub}}</td>' + 
                             '<td><a href="http://{{url}}/d/m/insights/moderations" target="_blank">{{modCount}}</a></td>' + 
                             '<td>{{nonModCount}}</td>' + 
                             '<td><a href="http://{{url}}/d/reported" target="_blank">{{totalReports}}</a></td>' + 
-                        '{{/exists}}{{/.}}' +
+                        '{{/exists}}' +
                     '</tr>' +
                 '{{/wikis}}' +
+                '{{#nowikis}}<tr><td colspan="6" style="text-align:center">No wikis found with unreviewed reports and the applied filters.</td></tr>{{/nowikis}}' +
             '</tbody>' +
         '</table>';
 
@@ -141,13 +142,13 @@
         }).then(function(data) {
             if (!data.query || !data.query.pages) {
                 console.warn('Could not get page ' + page);
-                return;
+                return null;
             }
             for (var pageid in data.query.pages) {
                 if (!data.query.pages[pageid] || !data.query.pages[pageid].revisions ||
                     !data.query.pages[pageid].revisions.length) {
                         console.warn('Could not get page ' + page);
-                        return;
+                        return null;
                     }
                 return data.query.pages[pageid].revisions[0]['*'];
             }
@@ -178,8 +179,6 @@
             }
         });
 
-        console.log(hubFilters, noHubFilters, languageFilters, noLanguageFilters);
-
         var shownWikis = GDMD.wikis.filter(function(wiki) {
             if (noLanguageFilters && noHubFilters) return true;
             if (noLanguageFilters) {
@@ -192,7 +191,8 @@
             }
         });
         var table = $(Mustache.render(GDMD.templates.dashboardTable, {
-            wikis: shownWikis
+            wikis: shownWikis,
+            nowikis: shownWikis.length == 0 ? true : false
         }));
         $('#gdm-dashboard').empty().append(table);
         mw.loader.using('jquery.tablesorter', function () {
@@ -201,47 +201,55 @@
     }
 
     GDMD.init = function () {
-        // Add search box
-        $('#gdm-dashboard-search').empty().append(Mustache.render(GDMD.templates.search));
+        // TODO: Add search box
+        // $('#gdm-dashboard-search').empty().append(Mustache.render(GDMD.templates.search));
         var year = new Date().getUTCFullYear();
         var month = new Date().getUTCMonth();
         $.when(GDMD.getPageContents(GDMD.PAGES.OVERVIEW + year + ' ' + GDMD.MONTHS[month])).then(function(content) {
-            var wikis = content.split('\n');
-            var hubs = [];
-            wikis.forEach(function(wiki, i) {
-                var logComponents = wiki.split('|');
-                if (!logComponents[0].startsWith('*')) {
+            var badDatePromise = $.Deferred().resolve(content);
+            if (content === null) {
+                month = month === 0 ? 11 : month - 1;
+                if (month == 11) year -= 1;
+                badDatePromise = GDMD.getPageContents(GDMD.PAGES.OVERVIEW + year + ' ' + GDMD.MONTHS[month]);
+            }
+            $.when(badDatePromise).then(function (content) {
+                var wikis = content.split('\n');
+                var hubs = [];
+                wikis.forEach(function (wiki, i) {
+                    var logComponents = wiki.split('|');
+                    if (!logComponents[0].startsWith('*')) {
+                        wikis[i] = {
+                            exists: false
+                        };
+                        return;
+                    }
                     wikis[i] = {
-                        exists: false
+                        wikiid: logComponents[0].replace('*\s?', ''),
+                        url: logComponents[1],
+                        wikiname: logComponents[2],
+                        hub: logComponents[3] == 'None' ? '' : logComponents[3],
+                        lang: logComponents[4],
+                        modCount: logComponents[5],
+                        nonModCount: logComponents[6],
+                        totalReports: logComponents[7],
+                        exists: true
                     };
-                    return;
-                }
-                wikis[i] = {
-                    wikiid: logComponents[0].replace('*\s?', ''),
-                    url: logComponents[1],
-                    wikiname: logComponents[2],
-                    hub: logComponents[3] == 'None' ? '' : logComponents[3],
-                    lang: logComponents[4],
-                    modCount: logComponents[5],
-                    nonModCount: logComponents[6],
-                    totalReports: logComponents[7],
-                    exists: true
-                };
-                if (hubs.indexOf(logComponents[3]) < 0) {
-                    hubs.push(logComponents[3]);
-                }
+                    if (hubs.indexOf(logComponents[3]) < 0) {
+                        hubs.push(logComponents[3]);
+                    }
+                });
+                $('#gdm-dashboard-loading').remove();
+                $('#gdm-dashboard-search').append(Mustache.render(GDMD.templates.filters, {
+                    languages: GDMD.LANGUAGES,
+                    hubs: hubs
+                }));
+                GDMD.addFilterEvents();
+                GDMD.wikis = wikis;
+                GDMD.wikis.sort(function (a, b) {
+                    return parseInt(b.totalReports) - parseInt(a.totalReports);
+                })
+                GDMD.showWikis();
             });
-            $('#gdm-dashboard-loading').remove();
-            $('#gdm-dashboard-search').append(Mustache.render(GDMD.templates.filters, {
-                languages: GDMD.LANGUAGES,
-                hubs: hubs
-            }));
-            GDMD.addFilterEvents();
-            GDMD.wikis = wikis;
-            GDMD.wikis.sort(function (a, b) {
-                return parseInt(b.totalReports) - parseInt(a.totalReports);
-            })
-            GDMD.showWikis();
         });
     };
 
@@ -280,8 +288,5 @@
     }
 
     GDMD.init();
-
-    // Debugging
-    window.GDMD = GDMD;
 
 })(window, jQuery, mediaWiki, window.Mustache);
