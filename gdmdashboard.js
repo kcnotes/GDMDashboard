@@ -7,7 +7,7 @@
 
 ;(function (window, $, mw, Mustache) {
     // if (window.GDMDashboardLoaded) return;
-    if ($('#gdm-dashboard').length == 0) return;
+    if ($('#gdm-dashboard').length === 0) return;
     var groups = mw.config.get('wgUserGroups');
     if (groups.indexOf('staff') < 0 && groups.indexOf('vstf') < 0 &&
         groups.indexOf('helper') < 0 && groups.indexOf('global-discussions-moderator') < 0) {
@@ -155,6 +155,74 @@
         });
     };
 
+    GDMD.searchWikis = function (input) {
+        var lang = '';
+        var domain = 'fandom.com';
+        input = input.replace(/(^\s*|\s*$)/g, '');
+        var wiki = input;
+
+        if (input.match(/\.(wikia|fandom)\.(org|com)/i)) {
+            input = input.replace(/(https?:)?\/\//g, '');
+            input = input.replace(/$/g, '/').replace(/\/+$/g, '/');
+            if (input.match(/fandom\.com/g)) {
+                // Grab <wiki>.fandom.com/<lang>
+                var fcomponents = input.match(/^([^\.]*)\.fandom\.com\/([^\/]*)\/{0,1}.*/i);
+                if (fcomponents) {
+                    wiki = fcomponents[1];
+                    lang = fcomponents[2];
+                }
+            } else if (input.match(/wikia\.org/g)) {
+                // Grab <wiki>.wikia.org/<lang>
+                var ocomponents = input.match(/^([^\.]*)\.wikia\.org\/([^\/]*)\/{0,1}.*/i);
+                if (ocomponents) {
+                    wiki = ocomponents[1];
+                    lang = ocomponents[2];
+                    domain = 'wikia.org';
+                }
+            } else if (input.match(/wikia\.com/g)) {
+                // Grab <lang>.<wiki>.wikia.com
+                var wcomponents = input.match(/^([^\.]*?)\.*([^\.]*)\.wikia\.com.*/i);
+                if (wcomponents) {
+                    wiki = wcomponents[2];
+                    lang = wcomponents[1];
+                    domain = 'wikia.com';
+                }
+            }
+        } else {
+            var pcomponents = input.match(/^(.+)\.(.+)$/i);
+            if (pcomponents) {
+                lang = pcomponents[1];
+                wiki = pcomponents[2];
+            }
+        }
+        var url = 'https://' + wiki + '.' + domain + '/';
+        if (lang !== '') {
+            url += lang + '/';
+        }
+        return $.ajax({
+            url: url + 'api.php',
+            type: 'GET',
+            format: 'json',
+            dataType: 'jsonp',
+            crossDomain: 'true',
+            xhrFields: {
+                withCredentials: true
+            },
+            data: {
+                action: 'query',
+                meta: 'siteinfo',
+                siprop: ['general', 'variables'].join('|'),
+                format: 'json'
+            }
+        }).then(function (data) {
+            var wikiid = $.grep(data.query.variables, function (e) {
+                return e.id === 'wgCityId';
+            })[0]['*'];
+            return wikiid;
+        })
+    };
+
+
     GDMD.showWikis = function() {
         // Get filters for language
         var languageFilters = [];
@@ -192,13 +260,13 @@
         });
         var table = $(Mustache.render(GDMD.templates.dashboardTable, {
             wikis: shownWikis,
-            nowikis: shownWikis.length == 0 ? true : false
+            nowikis: shownWikis.length === 0 ? true : false
         }));
         $('#gdm-dashboard').empty().append(table);
         mw.loader.using('jquery.tablesorter', function () {
             table.tablesorter();
         });
-    }
+    };
 
     GDMD.init = function () {
         // TODO: Add search box
@@ -247,7 +315,7 @@
                 GDMD.wikis = wikis;
                 GDMD.wikis.sort(function (a, b) {
                     return parseInt(b.totalReports) - parseInt(a.totalReports);
-                })
+                });
                 GDMD.showWikis();
             });
         });
@@ -285,8 +353,10 @@
             $('#filter-hubs .filter-default').text(hubFilters.join(', '));
             GDMD.showWikis();
         });
-    }
+    };
 
     GDMD.init();
+
+    window.GDMD = GDMD;
 
 })(window, jQuery, mediaWiki, window.Mustache);
