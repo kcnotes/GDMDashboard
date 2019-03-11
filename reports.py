@@ -202,7 +202,7 @@ class GDMBot(object):
         For recording data, use another account (if required)
         """
         text = ""
-        for url, wiki in self.wikis.items():
+        for url, wiki in sorted(self.wikis.items()):
             if url in ignorewikis:
                 continue
             if not wiki['exists']:
@@ -252,7 +252,7 @@ class GDMBot(object):
                     line = line.rstrip()
                     if not line: continue
                     wikiurl = re.search(r"https?:\/\/(.*?)\/d\/p\/", line)
-                    if wikiurl.group(1) and wikiurl.group(1) not in urls:
+                    if wikiurl is not None and wikiurl.group(1) not in urls:
                         if wikiurl.group(1) in ignorewikis:
                             continue
                         urls.append(wikiurl.group(1))
