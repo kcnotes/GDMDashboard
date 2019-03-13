@@ -117,7 +117,7 @@
                         '{{/exists}}' +
                     '</tr>' +
                 '{{/wikis}}' +
-                '{{#nowikis}}<tr><td colspan="6" style="text-align:center">No wikis found with unreviewed reports and the applied filters.</td></tr>{{/nowikis}}' +
+                '{{#nowikis}}<tr><td colspan="6" style="text-align:center">No wikis found with the filters/search.</td></tr>{{/nowikis}}' +
             '</tbody>' +
         '</table>';
 
@@ -155,7 +155,12 @@
         });
     };
 
-    GDMD.searchWikis = function (input) {
+    /**
+     * Use api.php to get a wiki's URL
+     * @param {String} input a 'partial' (e.g. es.witcher) or a full URL (es.witcher.wikia.com)
+     * @return {Deferred} object returning the wiki ID if found, null otherwise
+     */
+    GDMD.getWikiData = function (input) {
         var lang = '';
         var domain = 'fandom.com';
         input = input.replace(/(^\s*|\s*$)/g, '');
@@ -202,6 +207,7 @@
         return $.ajax({
             url: url + 'api.php',
             type: 'GET',
+            timeout: 5000,
             format: 'json',
             dataType: 'jsonp',
             crossDomain: 'true',
@@ -211,19 +217,68 @@
             data: {
                 action: 'query',
                 meta: 'siteinfo',
-                siprop: ['general', 'variables'].join('|'),
+                siprop: ['general', 'variables', 'category'].join('|'),
                 format: 'json'
             }
-        }).then(function (data) {
+        }).then(function(data) {
             var wikiid = $.grep(data.query.variables, function (e) {
                 return e.id === 'wgCityId';
             })[0]['*'];
-            return wikiid;
-        })
+            return {
+                wikiid: wikiid,
+                url: data.query.general.server + data.query.general.scriptpath,
+                wikiname: data.query.general.sitename,
+                hub: data.query.category.catname ? data.query.category.catname : '',
+                lang: data.query.general.lang,
+                modCount: 0,
+                nonModCount: 0,
+                totalReports: 0,
+                exists: true
+            };
+        }, function() {
+            console.log('Failed to find wiki ' + input);
+            return null;
+        });
     };
 
+    /**
+     * Gets a list of reported posts for a wiki's Discussions
+     */
+    GDMD.getReportedPosts = function(id) {
+        return $.ajax({
+            url: GDMD.discussionAPI + id + '/posts',
+            type: 'GET',
+            format: 'json',
+            crossDomain: 'true',
+            xhrFields: {
+                withCredentials: true
+            },
+            data: {
+                reported: true
+            }
+        });
+    };
 
-    GDMD.showWikis = function() {
+    /**
+     * Gets a list of moderator actions for a wiki's Discussions
+     */
+    GDMD.getModActions = function (id, days) {
+        return $.ajax({
+            url: GDMD.discussionAPI + id + '/leaderboard/moderator-actions',
+            type: 'GET',
+            format: 'json',
+            crossDomain: 'true',
+            xhrFields: {
+                withCredentials: true
+            },
+            data: {
+                days: days
+            }
+        });
+    };
+
+    GDMD.showWikis = function(wikis) {
+        if (!wikis) wikis = GDMD.wikis;
         // Get filters for language
         var languageFilters = [];
         var noLanguageFilters = true;
@@ -247,7 +302,7 @@
             }
         });
 
-        var shownWikis = GDMD.wikis.filter(function(wiki) {
+        var shownWikis = wikis.filter(function(wiki) {
             if (noLanguageFilters && noHubFilters) return true;
             if (noLanguageFilters) {
                 return (hubFilters.indexOf(wiki.hub) >= 0);
@@ -267,10 +322,39 @@
             table.tablesorter();
         });
     };
+    
+    GDMD.searchWiki = function(wiki) {
+        GDMD.getWikiData(wiki).then(function(wiki) {
+            $.when(GDMD.getReportedPosts(wiki.wikiid), GDMD.getModActions(wiki.wikiid, 30)).then(function(reports, actions) {
+                wiki.totalReports = reports[0].postCount;
+                var totalCount = 0;
+                var modCount = {
+                    'badge:threadmoderator': 0,
+                    'badge:sysop': 0,
+                    'badge:vstf': 0,
+                    'badge:global-discussions-moderator': 0,
+                    'badge:staff': 0,
+                    'badge:helper': 0
+                }
+                actions[0].users.forEach(function(user) {
+                    totalCount += parseInt(user.totalCount);
+                    if (user.userInfo.badgePermission == '') return;
+                    modCount[user.userInfo.badgePermission] += user.totalCount;
+                });
+                wiki.modCount = modCount['badge:threadmoderator'] + modCount['badge:sysop'];
+                wiki.nonModCount = totalCount - wiki.modCount;
+                GDMD.showWikis([wiki]);
+                $('#gdm-dashboard-loading').hide();
+            }, function() {
+                GDMD.showWikis([]);
+            });
+        }, function() {
+            GDMD.showWikis([]);
+        });
+    };
 
     GDMD.init = function () {
-        // TODO: Add search box
-        // $('#gdm-dashboard-search').empty().append(Mustache.render(GDMD.templates.search));
+        $('#gdm-dashboard-search').empty().append(Mustache.render(GDMD.templates.search));
         var year = new Date().getUTCFullYear();
         var month = new Date().getUTCMonth();
         $.when(GDMD.getPageContents(GDMD.PAGES.OVERVIEW + year + ' ' + GDMD.MONTHS[month])).then(function(content) {
@@ -306,12 +390,13 @@
                         hubs.push(logComponents[3]);
                     }
                 });
-                $('#gdm-dashboard-loading').remove();
+                $('#gdm-dashboard-loading').hide();
                 $('#gdm-dashboard-search').append(Mustache.render(GDMD.templates.filters, {
                     languages: GDMD.LANGUAGES,
                     hubs: hubs
                 }));
                 GDMD.addFilterEvents();
+                GDMD.addSearchEvents();
                 GDMD.wikis = wikis;
                 GDMD.wikis.sort(function (a, b) {
                     return parseInt(b.totalReports) - parseInt(a.totalReports);
@@ -355,6 +440,23 @@
         });
     };
 
+    GDMD.addSearchEvents = function () {
+        $('#gdm-dashboard-search-button').on('click', function (e) {
+            var wiki = $('#gdm-dashboard-search-input').val();
+            if (wiki === '') {
+                GDMD.showWikis();
+            } else {
+                $('#gdm-dashboard-loading').show();
+                $('#gdm-dashboard').empty();
+                GDMD.searchWiki(wiki);
+            }
+        });
+        $('#gdm-dashboard-search-input').keyup(function(e) {
+            if (e.keyCode === 13) {
+                $('#gdm-dashboard-search-button').click();
+            }
+        })
+    };
     GDMD.init();
 
     window.GDMD = GDMD;
