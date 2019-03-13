@@ -66,7 +66,8 @@
             '<input type="text" id="gdm-dashboard-search-input" placeholder="Community url">' +
             '<a class="wds-button" id="gdm-dashboard-search-button" value="Search">' +
                 '<img src="data:image/gif;base64,R0lGODlhAQABAIABAAAAAP///yH5BAEAAAEALAAAAAABAAEAQAICTAEAOw%3D%3D" class="sprite search" height="17" width="21">' +
-            '</a>' +
+            '</a> ' +
+            '<a class="wds-button" id="gdm-dashboard-clear-search" style="display:none"><span>Clear search</span></a>' +
         '</div>';
     GDMD.templates.filters =
         '<p class="tag">Filter:</p>' +
@@ -108,12 +109,12 @@
                 '{{#wikis}}' +
                     '<tr>' +
                         '{{#exists}}' +
-                            '<td><a href="http://{{url}}/d" target="_blank">{{wikiname}}</a></td>' + 
+                            '<td><a href="https://{{url}}/d" target="_blank">{{wikiname}}</a> (<a href="https://{{url}}/Special:ListUsers/sysop,bureaucrat,threadmoderator" target="_blank">mods</a>)</td>' + 
                             '<td>{{lang}}</td>' + 
                             '<td>{{hub}}</td>' + 
-                            '<td><a href="http://{{url}}/d/m/insights/moderations" target="_blank">{{modCount}}</a></td>' + 
+                            '<td><a href="https://{{url}}/d/m/insights/moderations" target="_blank">{{modCount}}</a></td>' + 
                             '<td>{{nonModCount}}</td>' + 
-                            '<td><a href="http://{{url}}/d/reported" target="_blank">{{totalReports}}</a></td>' + 
+                            '<td><a href="https://{{url}}/d/reported" target="_blank">{{totalReports}}</a></td>' + 
                         '{{/exists}}' +
                     '</tr>' +
                 '{{/wikis}}' +
@@ -346,9 +347,11 @@
                 GDMD.showWikis([wiki]);
                 $('#gdm-dashboard-loading').hide();
             }, function() {
+                $('#gdm-dashboard-loading').hide();
                 GDMD.showWikis([]);
             });
         }, function() {
+            $('#gdm-dashboard-loading').hide();
             GDMD.showWikis([]);
         });
     };
@@ -441,11 +444,17 @@
     };
 
     GDMD.addSearchEvents = function () {
-        $('#gdm-dashboard-search-button').on('click', function (e) {
+        $('#gdm-dashboard-clear-search').on('click', function() {
+            $('#gdm-dashboard-search-input').val('');
+            $('#gdm-dashboard-search-button').click();
+        });
+        $('#gdm-dashboard-search-button').on('click', function () {
             var wiki = $('#gdm-dashboard-search-input').val();
             if (wiki === '') {
                 GDMD.showWikis();
+                $('#gdm-dashboard-clear-search').hide();
             } else {
+                $('#gdm-dashboard-clear-search').show();
                 $('#gdm-dashboard-loading').show();
                 $('#gdm-dashboard').empty();
                 GDMD.searchWiki(wiki);
