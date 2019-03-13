@@ -98,23 +98,23 @@
     GDMD.templates.dashboardTable = 
         '<table class="article-table sortable">' +
             '<thead>' +
-                '<th>Wiki</th>' +
-                '<th>Language</th>' +
-                '<th>Hub</th>' +
-                '<th>Local mod actions</th>' +
-                '<th>Global mod actions</th>' +
-                '<th>Unreviewed reports</th>' +
+                '<th>Wiki </th>' +
+                '<th>Language </th>' +
+                '<th>Hub </th>' +
+                '<th>Local mod actions </th>' +
+                '<th>Global mod actions </th>' +
+                '<th>Unreviewed reports </th>' +
             '</thead>' +
             '<tbody>' +
                 '{{#wikis}}' +
                     '<tr>' +
                         '{{#exists}}' +
-                            '<td><a href="https://{{url}}/d" target="_blank">{{wikiname}}</a> (<a href="https://{{url}}/Special:ListUsers/sysop,bureaucrat,threadmoderator" target="_blank">mods</a>)</td>' + 
+                            '<td><a href="//{{url}}/d" target="_blank">{{wikiname}}</a> (<a href="//{{url}}/Special:ListUsers/sysop,bureaucrat,threadmoderator" target="_blank">mods</a>)</td>' + 
                             '<td>{{lang}}</td>' + 
                             '<td>{{hub}}</td>' + 
-                            '<td><a href="https://{{url}}/d/m/insights/moderations" target="_blank">{{modCount}}</a></td>' + 
+                            '<td><a href="//{{url}}/d/m/insights/moderations" target="_blank">{{modCount}}</a></td>' + 
                             '<td>{{nonModCount}}</td>' + 
-                            '<td><a href="https://{{url}}/d/reported" target="_blank">{{totalReports}}</a></td>' + 
+                            '<td><a href="//{{url}}/d/reported" target="_blank">{{totalReports}}</a></td>' + 
                         '{{/exists}}' +
                     '</tr>' +
                 '{{/wikis}}' +
