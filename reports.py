@@ -210,6 +210,8 @@ class GDMBot(object):
                 continue
             if not wiki['exists']:
                 continue
+            if wiki['totalReports'] == 0:
+                continue
             text += ('*' + str(wiki['id']) + '|' + str(wiki['domain']) + '|'
                         + str(wiki['name']) + '|' + str(wiki['hub']) + '|' 
                         + str(wiki['language']) + '|' 
