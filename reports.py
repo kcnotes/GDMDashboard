@@ -165,6 +165,9 @@ class GDMBot(object):
                 wiki['modCount'] = modCount['badge:threadmoderator'] + \
                     modCount['badge:sysop']
                 wiki['nonModCount'] = totalCount - wiki['modCount']
+            else:
+                wiki['modCount'] = 0
+                wiki['nonModCount'] = 0
     
     def getAllWikis(self, fromWiki, amount):
         wikis = self._getWikiDomains(fromWiki, amount)
