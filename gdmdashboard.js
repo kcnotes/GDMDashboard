@@ -55,7 +55,7 @@
     ];
     GDMD.wikis = [];
 
-    GDMD.discussionAPI = 'https://services.wikia.com/discussion/';
+    GDMD.discussionAPI = 'https://services.fandom.com/discussion/';
 
     /* View */
     GDMD.templates = {};
