@@ -239,6 +239,7 @@ class GDMBot(object):
             'title': self.datarootpage + today.strftime("%Y") + ' ' + today.strftime("%B"),
             'summary': self.datasummary,
             'text': text,
+            'bot': 1,
             'token': token
         })
         
