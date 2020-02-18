@@ -143,6 +143,8 @@ class GDMBot(object):
     def recordModActions(self):
         for url, wiki in self.wikis.items():
             if not wiki['exists']:
+                wiki['modCount'] = 0
+                wiki['nonModCount'] = 0
                 continue
             modCount = {
                 'badge:threadmoderator': 0,
@@ -308,7 +310,7 @@ def getAllWikiReports():
     bot = GDMBot()
     bot.login()
     i = 1
-    while i < 1932083:
+    while i < 2171942:
         if not bot.checkLoggedIn():
             bot.login()
         bot.getAllWikis(i, 500)
