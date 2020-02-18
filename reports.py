@@ -176,6 +176,7 @@ class GDMBot(object):
         for wikiid, wiki in wikis['query']['wkdomains'].items():
             self.wikis[wiki['domain']] = {
                 'wiki': wiki['domain'],
+                'domain': wiki['domain'],
                 'id': wikiid,
                 'modCount': 0,
                 'nonModCount': 0,
@@ -193,11 +194,11 @@ class GDMBot(object):
                     continue
                 if not wiki['exists']:
                     continue
-                dataFile.write('*' + str(wiki['id']) + '|' + str(wiki['domain']) + '|'
-                               + str(wiki['name']) + '|' + str(wiki['hub']) + '|' 
-                               + str(wiki['language']) + '|' 
-                               + str(wiki['modCount']) + '|'
-                               + str(wiki['nonModCount']) + '|'
+                if int(wiki['totalReports']) == 0:
+                    continue
+                dataFile.write('*' + str(wiki['id']) + ',' + str(wiki['domain']) + ','
+                               + str(wiki['modCount']) + ','
+                               + str(wiki['nonModCount']) + ','
                                + str(wiki['totalReports']) + '\n')
         del self.wikis
         self.wikis = {}
@@ -313,12 +314,13 @@ def getAllWikiReports():
     while i < 2171942:
         if not bot.checkLoggedIn():
             bot.login()
+        
         bot.getAllWikis(i, 500)
         bot.recordReports()
         bot.recordModActions()
         bot.recordReportsToCSV()
         print('Done recording, offset ' + str(i))
-        i = i + 50
+        i = i + 500
 
 
 # Loop through new reports
