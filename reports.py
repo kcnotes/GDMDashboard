@@ -36,7 +36,7 @@ class GDMBot(object):
         Log in to Wikia via services, requires discussions rights
         """
         login_session = requests.Session()
-        result = login_session.post('https://services.wikia.com/auth/token', data={
+        result = login_session.post('https://services.fandom.com/auth/token', data={
             'username': self.username,
             'password': self.pw
         })
@@ -61,7 +61,7 @@ class GDMBot(object):
         Log in to Wikia via services for discussions.fandom.com edits
         """
         login_session = requests.Session()
-        result = login_session.post('https://services.wikia.com/auth/token', data={
+        result = login_session.post('https://services.fandom.com/auth/token', data={
             'username': self.datauser,
             'password': self.datapass
         })
@@ -82,15 +82,15 @@ class GDMBot(object):
         self.datasession.headers.update({'User-Agent': self.ua})
     
     def checkLoggedIn(self):
-        userinfo = self.session.get('https://services.wikia.com/whoami')
+        userinfo = self.session.get('https://services.fandom.com/whoami')
         return 'userId' in userinfo.json()
 
     def checkDataLoggedIn(self):
-        userinfo = self.datasession.get('https://services.wikia.com/whoami')
+        userinfo = self.datasession.get('https://services.fandom.com/whoami')
         return 'userId' in userinfo.json()
 
     def _getReportedPosts(self, id):
-        req = self.session.get('https://services.wikia.com/discussion/' + str(id) + '/posts', params={
+        req = self.session.get('https://services.fandom.com/discussion/' + str(id) + '/posts', params={
             'reported': 'true'
         })
         data = req.json()
@@ -99,14 +99,14 @@ class GDMBot(object):
         return None
 
     def _getModActions(self, id, days):
-        req = self.session.get('https://services.wikia.com/discussion/' + str(id) + '/leaderboard/moderator-actions', params={
+        req = self.session.get('https://services.fandom.com/discussion/' + str(id) + '/leaderboard/moderator-actions', params={
             'days': days
         })
         data = req.json()
         return data
     
     def _getWikiDomains(self, fromWiki, amount):
-        wikis = self.session.get('https://www.wikia.com/api.php', params={
+        wikis = self.session.get('https://community.fandom.com/api.php', params={
             'action': 'query',
             'list': 'wkdomains',
             'wkfrom': fromWiki,
@@ -116,7 +116,7 @@ class GDMBot(object):
         return wikis.json()
 
     def _getBasicWikiData(self, url):
-        req = self.session.get('https://www.wikia.com/api/v1/Wikis/ByString', params={
+        req = self.session.get('https://community.fandom.com/api/v1/Wikis/ByString', params={
             'string': url,
             'includeDomain': 'true'
         })
@@ -330,7 +330,7 @@ def getAllWikiReports():
 
 if __name__ == '__main__':
     bot = GDMBot()
-    bot.login()
+    bot.login() 
     urls = bot.getWikisReportsLog()
     bot.deleteWikisReportsLog()
     print('Logs recorded and deleted')
