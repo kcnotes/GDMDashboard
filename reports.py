@@ -260,7 +260,7 @@ class GDMBot(object):
                 for line in dataFile:
                     line = line.rstrip()
                     if not line: continue
-                    wikiurl = re.search(r"https?:\/\/(.*?)\/d\/p\/", line)
+                    wikiurl = re.search(r"https?:\/\/(.*?)\/f\/p\/", line)
                     if wikiurl is not None and wikiurl.group(1) not in urls:
                         if wikiurl.group(1) in ignorewikis:
                             continue
