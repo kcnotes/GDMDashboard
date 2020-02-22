@@ -3,6 +3,7 @@ ignorewikis = set([
     'dauto-mobilefandom.fandom.com',
     'dauto.fandom.com/szl',
     'dauto.wikia.com',
+    'dauto.wikia.org',
     'dauto2fandom.fandom.com',
     'dauto3fandom.fandom.com',
     'dauto4.fandom.com/szl',
