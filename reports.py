@@ -93,17 +93,25 @@ class GDMBot(object):
         req = self.session.get('https://services.fandom.com/discussion/' + str(id) + '/posts', params={
             'reported': 'true'
         })
-        data = req.json()
-        if 'postCount' in data:
-            return data
+        try:
+            data = req.json()
+            if 'postCount' in data:
+                return data
+            print(data)
+        except:
+            print('Failed to get posts for ' + str(id))
         return None
 
     def _getModActions(self, id, days):
         req = self.session.get('https://services.fandom.com/discussion/' + str(id) + '/leaderboard/moderator-actions', params={
             'days': days
         })
-        data = req.json()
-        return data
+        try:
+            data = req.json()
+            return data
+        except:
+            print('Failed to get mod actions for ' + str(id))
+        return None
     
     def _getWikiDomains(self, fromWiki, amount):
         wikis = self.session.get('https://community.fandom.com/api.php', params={
@@ -120,11 +128,12 @@ class GDMBot(object):
             'string': url,
             'includeDomain': 'true'
         })
-        data = req.json()
-        if data['items']:
-            for wiki in data['items']:
-                if wiki['domain'].lower() == url.lower():
-                    return wiki
+        if req:
+            data = req.json()
+            if data['items']:
+                for wiki in data['items']:
+                    if wiki['domain'].lower() == url.lower():
+                        return wiki
         return None
     
     def recordReports(self):
