@@ -19,5 +19,10 @@ ignorewikis = set([
     'mediawiki119.wikia.com',
     'qadiscussionsfandom.fandom.com/de',
     'rikitiki.wikia.com',
-    'serowiec.wikia.com'
+    'serowiec.wikia.com',
+    'ucp-internal-test-community.fandom.com',
+    'ucp-internal-test-gosia.fandom.com',
+    'ucp-internal-test-nekky.fandom.com/de',
+    'ucp-internal-test-wdio.fandom.com',
+    'ucp-internal-test-zimny.fandom.com'
 ])
