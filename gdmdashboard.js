@@ -19,7 +19,8 @@
 
     /* Pages */
     GDMD.PAGES = {
-        OVERVIEW: 'Data:Overview/'
+        OVERVIEW: 'Data:Overview/',
+        IGNORE: 'Data:Dashboard/ignore'
     };
     GDMD.MONTHS = [
         'January',
@@ -336,7 +337,7 @@
                     'badge:global-discussions-moderator': 0,
                     'badge:staff': 0,
                     'badge:helper': 0
-                }
+                };
                 actions[0].users.forEach(function(user) {
                     totalCount += parseInt(user.totalCount);
                     if (user.userInfo.badgePermission == '') return;
@@ -362,17 +363,27 @@
         var month = new Date().getUTCMonth();
         $.when(GDMD.getPageContents(GDMD.PAGES.OVERVIEW + year + ' ' + GDMD.MONTHS[month])).then(function(content) {
             var badDatePromise = $.Deferred().resolve(content);
+            var ignoreWikisPromise = GDMD.getPageContents(GDMD.PAGES.IGNORE);
             if (content === null) {
                 month = month === 0 ? 11 : month - 1;
                 if (month == 11) year -= 1;
                 badDatePromise = GDMD.getPageContents(GDMD.PAGES.OVERVIEW + year + ' ' + GDMD.MONTHS[month]);
             }
-            $.when(badDatePromise).then(function (content) {
+            $.when(badDatePromise, ignoreWikisPromise).then(function (content, ignoreContent) {
+            	// Obtain wikis to ignore
+            	ignoreContent = ignoreContent.split('\n').filter(function(line) {
+            		return line[0] === '*';
+            	});
+            	ignoreContent = ignoreContent.map(function(line) {
+            		return line.slice(1).trim();
+            	});
+            	console.log(ignoreContent);
+            	// Obtain list of wikis
                 var wikis = content.split('\n');
                 var hubs = [];
                 wikis.forEach(function (wiki, i) {
                     var logComponents = wiki.split('|');
-                    if (!logComponents[0].startsWith('*')) {
+                    if (!logComponents[0].startsWith('*') || ignoreContent.indexOf(logComponents[1]) >= 0) {
                         wikis[i] = {
                             exists: false
                         };
@@ -464,7 +475,7 @@
             if (e.keyCode === 13) {
                 $('#gdm-dashboard-search-button').click();
             }
-        })
+        });
     };
     GDMD.init();
 
