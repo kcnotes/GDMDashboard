@@ -89,9 +89,10 @@ class GDMBot(object):
         userinfo = self.datasession.get('https://services.fandom.com/whoami')
         return 'userId' in userinfo.json()
 
-    def _getReportedPosts(self, id):
-        req = self.session.get('https://services.fandom.com/discussion/' + str(id) + '/posts', params={
-            'reported': 'true'
+    def _getReportedPosts(self, url):
+        req = self.session.get('https://{url}/wikia.php'.format(url=url), params={
+            'controller': 'DiscussionModeration',
+            'method': 'getReportedPosts'
         })
         try:
             data = req.json()
@@ -99,18 +100,20 @@ class GDMBot(object):
                 return data
             print(data)
         except:
-            print('Failed to get posts for ' + str(id))
+            print('Failed to get posts for ' + url)
         return None
 
-    def _getModActions(self, id, days):
-        req = self.session.get('https://services.fandom.com/discussion/' + str(id) + '/leaderboard/moderator-actions', params={
+    def _getModActions(self, url, days):
+        req = self.session.get('https://{url}/wikia.php'.format(url=url), params={
+            'controller': 'DiscussionLeaderboard',
+            'method': 'getModeratorActions',
             'days': days
         })
         try:
             data = req.json()
             return data
         except:
-            print('Failed to get mod actions for ' + str(id))
+            print('Failed to get mod actions for ' + url)
         return None
     
     def _getWikiDomains(self, fromWiki, amount):
@@ -141,8 +144,7 @@ class GDMBot(object):
         Record report count into CSV file
         """
         for url, wiki in self.wikis.items():
-            wikiid = wiki['id'].rstrip()
-            reports = self._getReportedPosts(wikiid)
+            reports = self._getReportedPosts(url)
             if reports:
                 wiki['exists'] = True
                 wiki['totalReports'] = reports['postCount']
@@ -164,7 +166,7 @@ class GDMBot(object):
                 'badge:helper': 0
             }
             totalCount = 0
-            actions = self._getModActions(wiki['id'], 30)
+            actions = self._getModActions(url, 30)
             if actions and 'users' in actions:
                 for user in actions['users']:
                     # Sum up counts
@@ -225,12 +227,12 @@ class GDMBot(object):
             if int(wiki['totalReports']) == 0:
                 continue
             text += ('*' + str(wiki['id']) + '|' + str(wiki['domain']) + '|'
-                        + str(wiki['name']) + '|' + str(wiki['hub']) + '|' 
-                        + str(wiki['language']) + '|' 
+                        + str(wiki['name']) + '|' + str(wiki['hub']) + '|'
+                        + str(wiki['language']) + '|'
                         + str(wiki['modCount']) + '|'
                         + str(wiki['nonModCount']) + '|'
                         + str(wiki['totalReports']) + '\n')
-        
+
         text += '[[Category:Dashboard overview data]]'
         if not self.datasession or self.checkDataLoggedIn():
             self.datalogin()
@@ -306,11 +308,11 @@ class GDMBot(object):
                     wiki = self._getBasicWikiData(url)
                     if wiki:
                         data['items'][url] = wiki
-        
+
         if data:
             with open(self.datajson, 'w') as jsonFile:
                 jsonFile.write(json.dumps(data, indent=4, sort_keys=True))
-        
+
         return data
 
 def getAllWikiReports():
@@ -323,7 +325,7 @@ def getAllWikiReports():
     while i < 2171942:
         if not bot.checkLoggedIn():
             bot.login()
-        
+
         bot.getAllWikis(i, 500)
         bot.recordReports()
         bot.recordModActions()
