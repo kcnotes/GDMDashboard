@@ -1,0 +1,12 @@
+{
+  "name": "GDMDashboard",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/kcnotes/GDMDashboard.git",
+  "author": "Noreplyz <nawrep@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "node-fetch": "^2.6.1"
+  }
+}
