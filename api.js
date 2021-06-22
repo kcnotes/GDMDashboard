@@ -129,6 +129,4 @@ api.listUsersSearch = async (limit, offset) => (
   })
 );
 
-api.listUsersSearch().then(res => console.log(JSON.stringify(res, null, 2)));
-
 module.exports = api;
