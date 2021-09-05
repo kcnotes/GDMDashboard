@@ -5,8 +5,26 @@
   "repository": "https://github.com/kcnotes/GDMDashboard.git",
   "author": "Noreplyz <nawrep@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "test": "jest dist/.*.test.js",
+    "pop": "node dist/populate.js"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.12",
+    "@types/sqlite3": "^3.1.7",
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "eslint": "^7.32.0",
+    "eslint-plugin-autofix": "^1.0.5",
+    "jest": "^27.0.6",
+    "typescript": "^4.3.5"
+  },
   "dependencies": {
+    "@types/node": "^16.6.1",
     "dotenv": "^10.0.0",
-    "node-fetch": "^2.6.1"
+    "messenger": "^0.0.9",
+    "node-fetch": "^2.6.1",
+    "sqlite": "^4.0.23",
+    "sqlite3": "^5.0.2"
   }
 }
