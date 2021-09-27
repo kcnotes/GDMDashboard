@@ -1,5 +1,3 @@
-import { Tracing } from 'trace_events';
-
 export interface LoggedInResponse {
   userId: string;
 }
@@ -19,7 +17,7 @@ export interface ReportedPostsResponse {
   _links: HalLinks;
   postCount: string;
   readOnlyMode: boolean;
-  _embedded: ReportedPostsEmbedded;
+  _embedded?: ReportedPostsEmbedded;
 }
 
 export interface ReportedPostsErrorResponse {

@@ -1,5 +1,6 @@
-const fetch = require('node-fetch');
-require('dotenv').config();
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const api = {};
 
@@ -14,8 +15,8 @@ const config = {
     'global-discussions-moderator',
     'soap',
     'wiki-manager',
-    'helper'
-  ]
+    'helper',
+  ],
 };
 
 api.get = async (wiki, data) => {
@@ -24,8 +25,8 @@ api.get = async (wiki, data) => {
     headers: {
       'User-Agent': config.UA,
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      cookie: `access_token=${config.ACCESS_TOKEN}`
-    }
+      cookie: `access_token=${config.ACCESS_TOKEN}`,
+    },
   };
   const dataString = new URLSearchParams(data).toString();
   const resp = await fetch(`https://${wiki}/api.php?${dataString}`, options);
@@ -38,9 +39,9 @@ api.post = async (wiki, data) => {
     headers: {
       'User-Agent': config.UA,
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      cookie: `access_token=${config.ACCESS_TOKEN}`
+      cookie: `access_token=${config.ACCESS_TOKEN}`,
     },
-    body: new URLSearchParams(data).toString()
+    body: new URLSearchParams(data).toString(),
   };
   const resp = await fetch(`https://${wiki}/api.php`, options);
   return await resp.json();
@@ -52,8 +53,8 @@ api.wikiaGet = async (wiki, data) => {
     headers: {
       'User-Agent': config.UA,
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      cookie: `access_token=${config.ACCESS_TOKEN}`
-    }
+      cookie: `access_token=${config.ACCESS_TOKEN}`,
+    },
   };
   const dataString = new URLSearchParams(data).toString();
   const resp = await fetch(`https://${wiki}/wikia.php?${dataString}`, options);
@@ -66,9 +67,9 @@ api.wikiaPost = async (wiki, data) => {
     headers: {
       'User-Agent': config.UA,
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      cookie: `access_token=${config.ACCESS_TOKEN}`
+      cookie: `access_token=${config.ACCESS_TOKEN}`,
     },
-    body: new URLSearchParams(data).toString()
+    body: new URLSearchParams(data).toString(),
   };
   const resp = await fetch(`https://${wiki}/wikia.php`, options);
   return await resp.json();
@@ -78,8 +79,8 @@ api.checkLoggedIn = async () => (
   await fetch(`${config.SERVICES}/whoami`, {
     headers: {
       'User-Agent': config.UA,
-      cookie: `access_token=${config.ACCESS_TOKEN}`
-    }
+      cookie: `access_token=${config.ACCESS_TOKEN}`,
+    },
   }).then(res => res.json())
 );
 
@@ -90,10 +91,11 @@ api.getReportedPosts = async (wiki) => (
   })
 );
 
-api.getModActions = async (wiki) => (
+api.getModActions = async (wiki, days) => (
   await api.wikiaGet(wiki, {
     controller: 'DiscussionLeaderboard',
     method: 'getModeratorActions',
+    days,
   })
 );
 
@@ -102,7 +104,7 @@ api.getWikiList = async (afterWikiId, limit) => (
     controller: 'DWDimensionApi',
     method: 'getWikis',
     after_wiki_id: afterWikiId,
-    limit
+    limit,
   })
 );
 
@@ -110,7 +112,7 @@ api.getToken = async (wiki) => (
   await api.get(wiki, {
     action: 'query',
     meta: 'tokens',
-    format: 'json'
+    format: 'json',
   })
 );
 
@@ -125,8 +127,8 @@ api.listUsersSearch = async (limit, offset) => (
     order: 'cnt_groups',
     sort: 'asc',
     offset: offset || 0,
-    format: 'json'
+    format: 'json',
   })
 );
 
-module.exports = api;
+export default api;

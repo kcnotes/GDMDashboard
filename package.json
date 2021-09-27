@@ -7,7 +7,8 @@
   "license": "MIT",
   "scripts": {
     "test": "jest dist/.*.test.js",
-    "pop": "node dist/populate.js"
+    "pop_wikis": "node dist/populate_wikis.js",
+    "pop_reports": "node dist/populate_reports.js"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.5.12",

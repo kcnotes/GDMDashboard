@@ -7,7 +7,7 @@ import {
   ReportedPostsResponse,
 } from './discussions_interface';
 import { DWDimensionApiGetWikisResponse } from './dw_dimensions_api_interface';
-import { ListUsersSearchUserResponse, QueryTokensResponse } from './query_interface';
+import { ListUsersSearchUserResponse, QuerySiteInfoVariablesResponse, QueryTokensResponse } from './query_interface';
 
 export class DashboardApi extends ApiInterface {
   checkLoggedIn(): Promise<LoggedInResponse | LoggedOutResponse> {
@@ -21,6 +21,7 @@ export class DashboardApi extends ApiInterface {
     return this.wikiaGet<ReportedPostsResponse>(wiki, {
       controller: 'DiscussionModeration',
       method: 'getReportedPosts',
+      cb: Math.random(),
     });
   }
 
@@ -38,6 +39,15 @@ export class DashboardApi extends ApiInterface {
       method: 'getWikis',
       after_wiki_id: afterWikiId,
       limit,
+    });
+  }
+
+  getWikiVariables(wiki: string): Promise<QuerySiteInfoVariablesResponse> {
+    return this.mwGet<QuerySiteInfoVariablesResponse>(wiki, {
+      action: 'query',
+      meta: 'siteinfo',
+      siprop: 'variables',
+      format: 'json',
     });
   }
 

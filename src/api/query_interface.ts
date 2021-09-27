@@ -25,3 +25,14 @@ interface ListUserSearchUser {
   blockuserURL: string;
   userRightsURL: string | null;
 }
+
+export interface QuerySiteInfoVariablesResponse {
+  query: {
+    variables: QuerySiteInfoVariable[],
+  };
+}
+
+interface QuerySiteInfoVariable {
+  id: string;
+  '*': unknown;
+}
