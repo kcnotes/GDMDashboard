@@ -21,10 +21,11 @@ type FindRaw = {
 const sub = createListener(11100);
 const ONE_HOUR_IN_SECONDS = 60 * 60; // in seconds
 
-open({
-  filename: 'data/gdm.sqlite3',
-  driver: sqlite3.Database,
-}).then(function(db) {
+(async () => {
+  const db = await open({
+    filename: 'data/gdm.sqlite3',
+    driver: sqlite3.Database,
+  });
   const api = new DashboardApi();
 
   sub.on<FindRaw>('find:raw', (_, post) => {
@@ -60,4 +61,4 @@ open({
       });
     }
   });
-});
+})();
