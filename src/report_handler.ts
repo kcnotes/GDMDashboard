@@ -49,14 +49,14 @@ const ONE_HOUR_IN_SECONDS = 60 * 60; // in seconds
           await addReportCountsIfHasReports(db, {
             wiki_id: wikiId.toString(),
             domain: post.wiki,
-          }, posts);
+          }, posts, Math.floor(Date.now() / 1000));
         } else if (wikis[0].last_updated + ONE_HOUR_IN_SECONDS < Math.floor(Date.now() / 1000)) {
           // More than an hour old - update
           const posts = await api.getReportedPosts(post.wiki);
           await addReportCountsIfHasReports(db, {
             wiki_id: wikiId.toString(),
             domain: post.wiki,
-          }, posts);
+          }, posts, Math.floor(Date.now() / 1000));
         }
       });
     }

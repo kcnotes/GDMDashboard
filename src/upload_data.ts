@@ -37,7 +37,7 @@ export const getWikisWithForumReports = async (
 ): Promise<string> => {
   const details = await db.all<WikiReportDetails[]>(`
     select r.wiki_id, domain, title, lang, vertical_name, wiki_manager, 
-      article_comment, forum, wall from Reports r
+      article_comment, forum, wall, last_reported from Reports r
     join Wikis w on w.wiki_id = r.wiki_id
     where is_test_wiki is '0'
       and public is '1'
@@ -52,9 +52,9 @@ export const getWikisWithForumReports = async (
 // wiki_id|domain|title|...|wall\n
 export const getAllWikiReports = async (
   db: Database<sqlite3.Database, sqlite3.Statement>,
-): Promise<{ wiki_id: string; domain: string }[]> => {
-  return await db.all<{ wiki_id: string; domain: string }[]>(`
-    select r.wiki_id, w.domain from Reports r
+): Promise<{ wiki_id: string; domain: string, last_reported: number }[]> => {
+  return await db.all<{ wiki_id: string; domain: string, last_reported: number }[]>(`
+    select r.wiki_id, w.domain, r.last_reported from Reports r
     join Wikis w on w.wiki_id = r.wiki_id
     where is_test_wiki is '0'
       and public is '1'
@@ -71,13 +71,17 @@ export const updateOldWikiReports = async (
   const CONCURRENT_REQUESTS = 20;
   let currentRequest = 0;
 
-  const getReportedPosts = async (wiki?: { wiki_id: string, domain: string }) => {
+  const getReportedPosts = async (wiki?: {
+    wiki_id: string,
+    domain: string,
+    last_reported: number,
+  }) => {
     if (!wiki) {
       return;
     }
     try {
       const posts = await api.getReportedPosts(wiki.domain);
-      await addReportCountsIfHasReports(db, wiki, posts);
+      await addReportCountsIfHasReports(db, wiki, posts, wiki.last_reported);
       await getReportedPosts(reports[currentRequest++]);
     } catch (e) {
       // Wiki most likely closed
@@ -106,7 +110,7 @@ export const getWikisWithReportsAndWR = async (
 ): Promise<string> => {
   const details = await db.all<WikiReportDetails[]>(`
     select r.wiki_id, domain, title, lang, vertical_name, wiki_manager, 
-      article_comment, forum, wall from Reports r
+      article_comment, forum, wall, last_reported from Reports r
     join Wikis w on w.wiki_id = r.wiki_id
     where is_test_wiki is '0'
       and public is '1'

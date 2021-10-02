@@ -23,6 +23,7 @@ type WikiReportCount = {
   forum: number,
   wall: number,
   last_updated: number,
+  last_reported: number | null,
 };
 
 // Drops and creates a new fresh table
@@ -33,7 +34,8 @@ const createReportsTable = async (db: Database<sqlite3.Database, sqlite3.Stateme
       article_comment number,
       forum number,
       wall number,
-      last_updated datetime
+      last_updated datetime,
+      last_reported datetime
     )
   `);
 };
@@ -49,7 +51,8 @@ export const addReportCounts = async (
       ${reports.article_comment},
       ${reports.forum},
       ${reports.wall},
-      ${reports.last_updated}
+      ${reports.last_updated},
+      ${reports.last_reported}
     );
   `);
 };
@@ -65,6 +68,7 @@ export const getReportCountsByDomain = async (
     where Wikis.domain is '${domain}'`);
 };
 
+// last_reported should be null in initial data collection
 export const addReportCountsIfHasReports = async (
   db: Database<sqlite3.Database, sqlite3.Statement>,
   wiki: {
@@ -72,6 +76,7 @@ export const addReportCountsIfHasReports = async (
     domain: string,
   },
   posts: ReportedPostsResponse | ReportedPostsErrorResponse,
+  lastReported: number | null,
 ): Promise<void> => {
   if ('error' in posts) {
     if (posts.error !== 'ControllerNotFoundException') {
@@ -82,7 +87,6 @@ export const addReportCountsIfHasReports = async (
       delete from Reports
       where wiki_id is '${wiki.wiki_id}'
     `);
-
     return;
   } else {
     // Wiki is dodgy - delete existing entry
@@ -109,6 +113,7 @@ export const addReportCountsIfHasReports = async (
       forum: posts._embedded.count[0].FORUM,
       wall: posts._embedded.count[0].WALL,
       last_updated: Math.floor(Date.now() / 1000),
+      last_reported: lastReported,
     });
   }
 };
@@ -136,7 +141,7 @@ export const runInitialReportCollection = async (
 
   const getReportedPosts = async (wiki: Wiki) => {
     const posts = await api.getReportedPosts(wiki.domain);
-    await addReportCountsIfHasReports(db, wiki, posts);
+    await addReportCountsIfHasReports(db, wiki, posts, null);
     getReportedPosts(wikis[currentRequest++]);
   };
 
