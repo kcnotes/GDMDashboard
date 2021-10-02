@@ -76,16 +76,30 @@ export const addReportCountsIfHasReports = async (
   if ('error' in posts) {
     if (posts.error !== 'ControllerNotFoundException') {
       console.log(wiki.domain, posts.error, posts.details);
-      return;
     }
+    // Some sort of error - remove from Reports anyway
+    await db.run(`
+      delete from Reports
+      where wiki_id is '${wiki.wiki_id}'
+    `);
+
+    return;
   } else {
-    // Wiki is dodgy
+    // Wiki is dodgy - delete existing entry
     if (!posts._embedded) {
+      await db.run(`
+        delete from Reports
+        where wiki_id is '${wiki.wiki_id}'
+      `);
       return;
     }
 
-    // No reports - no need to add an entry
+    // No reports - delete existing entry
     if (posts._embedded.count[0].total === 0) {
+      await db.run(`
+        delete from Reports
+        where wiki_id is '${wiki.wiki_id}'
+      `);
       return;
     }
 

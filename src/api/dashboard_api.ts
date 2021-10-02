@@ -7,7 +7,7 @@ import {
   ReportedPostsResponse,
 } from './discussions_interface';
 import { DWDimensionApiGetWikisResponse } from './dw_dimensions_api_interface';
-import { ListUsersSearchUserResponse, QuerySiteInfoVariablesResponse, QueryTokensResponse } from './query_interface';
+import { EditResponse, ListUsersSearchUserResponse, QuerySiteInfoVariablesResponse, QueryTokensResponse, TokensResponse } from './query_interface';
 
 export class DashboardApi extends ApiInterface {
   checkLoggedIn(): Promise<LoggedInResponse | LoggedOutResponse> {
@@ -71,6 +71,27 @@ export class DashboardApi extends ApiInterface {
       sort: 'asc',
       offset: offset || 0,
       format: 'json',
+    });
+  }
+
+  // Get CSRF token to edit a page
+  getTokens(wiki: string): Promise<TokensResponse> {
+    return this.mwGet<TokensResponse>(wiki, {
+      action: 'query',
+      meta: 'tokens',
+      format: 'json',
+    });
+  }
+
+  // Edit a page
+  edit(wiki: string, title: string, summary: string, text: string, token: string): Promise<EditResponse> {
+    return this.mwPost<EditResponse>(wiki, undefined, {
+      action: 'edit',
+      title,
+      summary,
+      text,
+      format: 'json',
+      token,
     });
   }
 }

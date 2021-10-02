@@ -36,3 +36,24 @@ interface QuerySiteInfoVariable {
   id: string;
   '*': unknown;
 }
+
+export interface TokensResponse {
+  query: {
+    tokens: {
+      csrftoken: string,
+    }
+  }
+}
+
+export interface EditResponse {
+  edit: {
+    new?: string,
+    result: string,
+    pageid: number,
+    title: string,
+    contentmodel: string,
+    oldrevid?: number,
+    newrevid: number,
+    newtimestamp: string,
+  },
+}

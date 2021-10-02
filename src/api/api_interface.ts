@@ -35,8 +35,8 @@ export class ApiInterface {
     body?: any,
     options?: Partial<RequestInit>,
   }): Promise<T> {
-    const paramsString = new URLSearchParams(params)?.toString();
-    const res = await fetch(`${path}?${paramsString}`, {
+    const paramsString = params ? `?${new URLSearchParams(params)?.toString()}` : '';
+    const res = await fetch(`${path}${paramsString}`, {
       method,
       headers,
       body,
@@ -59,7 +59,7 @@ export class ApiInterface {
       method: 'POST',
       path: `https://${wiki}/api.php`,
       params,
-      body,
+      body: new URLSearchParams(body).toString(),
       options,
     });
   }
