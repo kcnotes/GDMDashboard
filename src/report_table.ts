@@ -52,7 +52,7 @@ export const addReportCounts = async (
       ${reports.forum},
       ${reports.wall},
       ${reports.last_updated},
-      ${reports.last_reported || 'null'},
+      ${reports.last_reported || 'null'}
     );
   `);
 };
