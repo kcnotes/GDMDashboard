@@ -4,7 +4,7 @@ import { DashboardApi } from './api/dashboard_api';
 import { addReportCountsIfHasReports } from './report_table';
 
 const uploadConfig = {
-  wiki: 'noreply.fandom.com',
+  wiki: 'discussions.fandom.com',
   forumDataPage: 'Data:Overview/discussions',
   wrDataPage: 'Data:Overview/wr',
   summaryDataPage: 'Data:Overview/summary',
@@ -122,6 +122,8 @@ export const getWikisWithReportsAndWR = async (
 };
 
 type TotalReportSummary = {
+  lang: string,
+  vertical_name: string,
   article_comment: number,
   forum: number,
   wall: number,
@@ -131,19 +133,19 @@ type TotalReportSummary = {
 // Retrieve summary data
 export const getSummaryData = async (
   db: Database<sqlite3.Database, sqlite3.Statement>,
-): Promise<void> => {
-  const totalReports = await db.all<TotalReportSummary>(`
-    select sum(article_comment), sum(forum), sum(wall), count(*) from Reports r
+): Promise<string> => {
+  const reports = await db.all<TotalReportSummary[]>(`
+    select lang, vertical_name,
+      sum(article_comment), sum(forum), sum(wall), count(*) from Reports r
     join Wikis w on w.wiki_id = r.wiki_id
     where is_test_wiki is '0'
-      and public is '1';
+      and public is '1'
+    group by lang, vertical_name
+    order by count(*) desc;
   `);
-  const total = await db.all<TotalReportSummary>(`
-    select sum(article_comment), sum(forum), sum(wall), count(*) from Reports r
-    join Wikis w on w.wiki_id = r.wiki_id
-    where is_test_wiki is '0'
-      and public is '1';
-  `);
+  return '*' + reports.map(
+    (detail) => Object.values(detail).join('|'),
+  ).join('\n*') + '\n[[Category:Dashboard overview data]]';
 };
 
 open({
@@ -180,6 +182,21 @@ open({
   if (wrResp.edit.result === 'Success') {
     console.log(
       `${getTimestamp()} Successfully updated data at '${wrResp.edit.title}'.`,
+    );
+  }
+
+  // Get summary numbers
+  const summaryData = await getSummaryData(db);
+  const summaryResp = await api.edit(
+    uploadConfig.wiki,
+    uploadConfig.summaryDataPage,
+    uploadConfig.summary,
+    summaryData,
+    tokens.query.tokens.csrftoken,
+  );
+  if (wrResp.edit.result === 'Success') {
+    console.log(
+      `${getTimestamp()} Successfully updated data at '${summaryResp.edit.title}'.`,
     );
   }
 });
