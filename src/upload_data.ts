@@ -153,7 +153,7 @@ open({
   driver: sqlite3.Database,
 }).then(async function(db) {
   await updateOldWikiReports(db);
-  const tokens = await api.getTokens('noreply.fandom.com');
+  const tokens = await api.getTokens(uploadConfig.wiki);
 
   // Get forum reports
   const forumData = await getWikisWithForumReports(db);
