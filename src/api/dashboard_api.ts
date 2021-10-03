@@ -90,6 +90,7 @@ export class DashboardApi extends ApiInterface {
       title,
       summary,
       text,
+      bot: 1,
       format: 'json',
       token,
     });

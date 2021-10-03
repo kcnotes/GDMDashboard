@@ -63,7 +63,7 @@ export const getReportCountsByDomain = async (
   domain: string,
 ): Promise<WikiReportCount[]> => {
   return await db.all<WikiReportCount[]>(`
-    select Wikis.wiki_id, article_comment, forum, wall, last_updated from Wikis
+    select Wikis.wiki_id, article_comment, forum, wall, last_updated, last_reported from Wikis
     left join Reports on Reports.wiki_id = Wikis.wiki_id
     where Wikis.domain is '${domain}'`);
 };

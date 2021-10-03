@@ -21,6 +21,11 @@ type FindRaw = {
 const sub = createListener(11101);
 const ONE_HOUR_IN_SECONDS = 60 * 60; // in seconds
 
+const getTimestamp = () =>
+  `[${new Date().toJSON().replace(/[TZ]/g, ' ').trim()}]`;
+
+let firstCall = false;
+
 (async () => {
   const db = await open({
     filename: 'data/gdm.sqlite3',
@@ -30,6 +35,10 @@ const ONE_HOUR_IN_SECONDS = 60 * 60; // in seconds
 
   sub.on<FindRaw>('find:raw', (_, post) => {
     if (post.platform === 'report') {
+      if (!firstCall) {
+        firstCall = true;
+        console.log(`${getTimestamp()} First report received.`);
+      }
       getReportCountsByDomain(db, post.wiki).then(async (wikis) => {
         let wikiId: number;
         // Add wiki in if not found
