@@ -57,6 +57,7 @@
             "named": "never"
         }],
         "spaced-comment": ["error", "always"],
-        "switch-colon-spacing": "error"
+        "switch-colon-spacing": "error",
+        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
     }
 }

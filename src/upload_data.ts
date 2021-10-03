@@ -8,6 +8,7 @@ const uploadConfig = {
   forumDataPage: 'Data:Overview/discussions',
   wrDataPage: 'Data:Overview/wr',
   summaryDataPage: 'Data:Overview/summary',
+  countsDataPage: 'Data:Overview/counts',
   summary: 'Updating GDMDashboard data',
 };
 
@@ -22,7 +23,7 @@ type WikiReportDetails = {
   forum: number,
   wall: number,
 }
-const _23_HOURS_IN_SECONDS = 23 * 60 * 60; // in seconds
+const ONE_HOUR_IN_SECONDS = 60 * 60; // in seconds
 
 const api = new DashboardApi();
 
@@ -58,7 +59,7 @@ export const getAllWikiReports = async (
     join Wikis w on w.wiki_id = r.wiki_id
     where is_test_wiki is '0'
       and public is '1'
-      and last_updated < ${Math.floor(Date.now() / 1000) - _23_HOURS_IN_SECONDS};
+      and last_updated < ${Math.floor(Date.now() / 1000) - ONE_HOUR_IN_SECONDS};
   `);
 };
 
@@ -66,7 +67,7 @@ export const updateOldWikiReports = async (
   db: Database<sqlite3.Database, sqlite3.Statement>,
 ): Promise<void> => {
   const reports = await getAllWikiReports(db);
-  console.log(reports);
+  console.log(`${reports.length} reports to refresh`);
 
   const CONCURRENT_REQUESTS = 20;
   let currentRequest = 0;
@@ -148,6 +149,22 @@ export const getSummaryData = async (
   ).join('\n*') + '\n[[Category:Dashboard overview data]]';
 };
 
+// Retrieve summary data
+export const getCountsData = async (
+  db: Database<sqlite3.Database, sqlite3.Statement>,
+): Promise<string> => {
+  const reports = await db.all(`
+    select sum(article_comment), sum(forum), sum(wall), count(*) from Reports r
+    join Wikis w on w.wiki_id = r.wiki_id
+    where is_test_wiki is '0'
+      and public is '1'
+    order by count(*) desc;
+  `);
+  return '*' + reports.map(
+    (detail) => Object.values(detail).join('|'),
+  ).join('\n*') + '\n[[Category:Dashboard overview data]]';
+};
+
 open({
   filename: 'data/gdm.sqlite3',
   driver: sqlite3.Database,
@@ -197,6 +214,21 @@ open({
   if (wrResp.edit.result === 'Success') {
     console.log(
       `${getTimestamp()} Successfully updated data at '${summaryResp.edit.title}'.`,
+    );
+  }
+
+  // Get summary numbers
+  const countsData = await getCountsData(db);
+  const countsResp = await api.edit(
+    uploadConfig.wiki,
+    uploadConfig.countsDataPage,
+    uploadConfig.summary,
+    countsData,
+    tokens.query.tokens.csrftoken,
+  );
+  if (wrResp.edit.result === 'Success') {
+    console.log(
+      `${getTimestamp()} Successfully updated data at '${countsResp.edit.title}'.`,
     );
   }
 });
