@@ -2,7 +2,7 @@
 /**
  * <nowiki>
  * Dashboard for Global Discussions Moderators
- * @see https://github.com/kcnotes/GDMDashboard/tree/master/src/fandom_loaded/gdmdashboard.ts
+ * @see https://github.com/kcnotes/GDMDashboard/blob/master/fandom_loaded/gdmdashboard.ts
  * @author Noreplyz
  *
  * Hello JS Reviewer! To help you on your quest for secure scripts: this code is most easily viewed in Typescript via
