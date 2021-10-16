@@ -3,6 +3,7 @@ import sqlite3 from 'sqlite3';
 import { Database } from 'sqlite';
 import { DWDimensionApiWiki } from './api/dw_dimensions_api_interface';
 import { ReportedPostsErrorResponse, ReportedPostsResponse } from './api/discussions_interface';
+import { allowlist } from './allowlist.json';
 
 const api = new DashboardApi();
 
@@ -78,6 +79,9 @@ export const addReportCountsIfHasReports = async (
   posts: ReportedPostsResponse | ReportedPostsErrorResponse,
   lastReported: number | null,
 ): Promise<void> => {
+  if (allowlist.includes(wiki.domain)) {
+    return;
+  }
   if ('error' in posts) {
     if (posts.error !== 'ControllerNotFoundException') {
       console.log(wiki.domain, posts.error, posts.details);

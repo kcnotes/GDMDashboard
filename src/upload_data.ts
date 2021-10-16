@@ -83,7 +83,6 @@ export const updateOldWikiReports = async (
     try {
       const posts = await api.getReportedPosts(wiki.domain);
       await addReportCountsIfHasReports(db, wiki, posts, wiki.last_reported);
-      await getReportedPosts(reports[currentRequest++]);
     } catch (e) {
       // Wiki most likely closed
       await db.run(`
@@ -91,6 +90,7 @@ export const updateOldWikiReports = async (
         where wiki_id is '${wiki.wiki_id}'
       `);
     }
+    await getReportedPosts(reports[currentRequest++]);
   };
 
   const promises = [];
