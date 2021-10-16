@@ -73,6 +73,13 @@ type TableState = {
   limit: number,
 };
 
+type GDMDParams = {
+  user: string,
+  lang: string,
+  vertical: string,
+  limit: number,
+};
+
 (function(window, $, mw) {
   if ('GDMDashboardLoaded' in window) return;
   if ($('#gdm-dashboard').length === 0 && $('#gdm-dashboard-summary').length === 0) return;
@@ -679,15 +686,16 @@ type TableState = {
     );
   };
 
-  const loadReports = (type: 'wr' | 'gdm', wrUsername?: string, lang?: string, vertical?: string) => {
+  const loadReports = (type: 'wr' | 'gdm', { user, lang, vertical, limit }: GDMDParams) => {
     const mustacheLoad = mw.loader.using([
       'oojs-ui-windows',
       'mediawiki.template.mustache',
       'mediawiki.api',
     ]);
-    if (wrUsername) filterStates.wr = wrUsername;
+    if (user) filterStates.wr = user;
     if (lang) filterStates.lang = lang;
     if (vertical) filterStates.vertical = vertical;
+    if (limit) filterStates.limit = limit;
     const pagePromise = getPage(pages[type]);
     Promise.all([ mustacheLoad, pagePromise, chartPromise ]).then(([ _, page ]) => {
       if (!page) return;
@@ -815,10 +823,17 @@ type TableState = {
     });
   };
 
+  const params = {
+    user: mw.util.getParamValue('user'),
+    lang: mw.util.getParamValue('lang'),
+    vertical: mw.util.getParamValue('vertical'),
+    limit: Number(mw.util.getParamValue('limit')),
+  };
+
   switch (mw.config.get('wgPageName')) {
   case 'Data:Dashboard/summary': loadSummary(); break;
-  case 'Data:Dashboard/wr': loadReports('wr', mw.util.getParamValue('user')); break;
-  case 'Data:Dashboard': loadReports('gdm', mw.util.getParamValue('user')); break;
+  case 'Data:Dashboard/wr': loadReports('wr', params); break;
+  case 'Data:Dashboard': loadReports('gdm', params); break;
   default: break;
   }
 })(window, jQuery, mw);
