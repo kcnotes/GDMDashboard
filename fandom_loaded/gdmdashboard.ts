@@ -330,7 +330,7 @@ type GDMDParams = {
       <tbody>
         {{#wikis}}
           <tr>
-            <td><a href="https://{{domain}}/f" target="_blank">{{sitename}}</a> (<a href="//{{domain}}/Special:ListUsers/sysop,bureaucrat,threadmoderator" target="_blank">mods</a>)</td>
+            <td><a href="https://{{domain}}/f" target="_blank">{{sitename}}</a> (<a href="//{{domain}}/Special:ListUsers/sysop" target="_blank">a</a>, <a href="//{{domain}}/Special:ListUsers/threadmoderator" target="_blank">m</a>)</td>
             <td>{{lang}}</td>
             <td>{{vertical}}</td>
             <td>{{wrUsername}}</td>
