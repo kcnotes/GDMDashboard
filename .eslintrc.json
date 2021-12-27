@@ -45,6 +45,20 @@
         "object-curly-spacing": ["error", "always"],
         "operator-linebreak": ["error", "after"],
         "padded-blocks": ["error", "never"],
+        "padding-line-between-statements": ["error",
+            { "blankLine": "always", "prev": "*", "next": "multiline-block-like" },
+            { "blankLine": "always", "prev": "multiline-block-like", "next": "*" },
+            { "blankLine": "any", "prev": "*", "next": "if" },
+            { "blankLine": "any", "prev": "if", "next": "*" },
+            { "blankLine": "any", "prev": "*", "next": "while" },
+            { "blankLine": "any", "prev": "while", "next": "*" },
+            { "blankLine": "any", "prev": "*", "next": "for" },
+            { "blankLine": "any", "prev": "for", "next": "*" },
+            { "blankLine": "any", "prev": "*", "next": "try" },
+            { "blankLine": "any", "prev": "try", "next": "*" },
+            { "blankLine": "any", "prev": "*", "next": "switch" },
+            { "blankLine": "any", "prev": "switch", "next": "*" }
+        ],
         "quotes": ["error", "single", {
             "allowTemplateLiterals": true
         }],
