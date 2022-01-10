@@ -54,7 +54,7 @@ export const addWikis = async (
     .join(',');
 
   await db.run(`
-    insert or ignore into 'Wikis' values ${dbEntries};
+    insert or replace into 'Wikis' values ${dbEntries};
   `);
 };
 
