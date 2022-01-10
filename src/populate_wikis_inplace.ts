@@ -6,5 +6,5 @@ open({
   filename: 'data/gdm.sqlite3',
   driver: sqlite3.Database,
 }).then(function(db) {
-  populateDatabase(db, true);
+  populateDatabase(db, false);
 });

@@ -60,8 +60,11 @@ export const addWikis = async (
 
 export const populateDatabase = async (
   db: Database<sqlite3.Database, sqlite3.Statement>,
+  clearWikis?: boolean,
 ): Promise<void> => {
-  await dropAndCreateWikisTable(db);
+  if (clearWikis) {
+    await dropAndCreateWikisTable(db);
+  }
   let afterWikiId = 0;
   let end = false;
   while (!end) {
