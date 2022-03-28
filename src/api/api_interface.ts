@@ -24,7 +24,9 @@ export const config = {
 const headers = {
   'User-Agent': config.UA,
   'Content-Type': 'application/x-www-form-urlencoded',
-  cookie: `access_token=${config.ACCESS_TOKEN}`,
+  cookie: `fandom_session=${config.ACCESS_TOKEN}`,
+  // required only during the transition period, can be removed after April
+  'X-Fandom-Auth': 1,
 };
 
 export class ApiInterface {
